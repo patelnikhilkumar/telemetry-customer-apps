@@ -1,0 +1,152 @@
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/auth-url: "https://oauth2.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io/oauth2/auth"
+      nginx.ingress.kubernetes.io/auth-signin: "https://oauth2.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io/oauth2/start?rd=https%3A%2F%2F$${q}host$${q}request_uri"
+    hosts:
+      - prometheus.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io
+    pathType: ImplementationSpecific
+    tls:
+      - secretName: addon-certificates-tls
+        hosts:
+          - prometheus.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io
+  prometheusSpec:
+    retention: 30d
+    externalLabels:
+      cluster: ${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}
+      link: 'https://prometheus.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io/alerts'
+    prometheusExternalLabelNameClear: true
+    resources:
+      requests:
+        memory: 200Mi
+    storageSpec:
+      volumeClaimTemplate:
+        metadata:
+          name: prometheus-pvc
+        spec:
+          storageClassName: kops-ssd-1-17
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 80Gi
+grafana:
+  plugins:
+    - grafana-piechart-panel
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      dashboard-nginx-ingress:
+        url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
+        datasource: Prometheus
+  extraSecretMounts:
+    - name: auth-generic-oauth-client
+      secretName: oauth-client
+      mountPath: /etc/secrets/auth_generic_oauth
+      defaultMode: 0440
+      readOnly: true
+  grafana.ini:
+    server:
+      domain: grafana.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}.webapps.audi.io
+      root_url: https://grafana.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}.webapps.audi.io
+    auth.generic_oauth:
+      enabled: true
+      team_ids:
+      allowed_organizations:
+      name: Auth0
+      client_id: $${q}__file{/etc/secrets/auth_generic_oauth/client-id}
+      client_secret: $${q}__file{/etc/secrets/auth_generic_oauth/client-secret}
+      scopes: openid profile email
+      auth_url: https://login.msi.audi.com/authorize
+      token_url: https://login.msi.audi.com/oauth/token
+      api_url: https://login.msi.audi.com/userinfo
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+      nginx.ingress.kubernetes.io/auth-tls-secret: "cocos-infra/ca-secret"
+      nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
+      nginx.ingress.kubernetes.io/auth-tls-pass-certificate-to-upstream: "true"
+      #nginx.ingress.kubernetes.io/enable-cors: "true"
+      #nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
+      #nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+      #nginx.ingress.kubernetes.io/configuration-snippet: |
+      #  more_set_headers "Access-Control-Allow-Origin: *";
+    hosts:
+      - grafana.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io
+      - grafana.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}.webapps.audi.io
+    pathType: ImplementationSpecific
+    tls:
+      - secretName: addon-certificates-tls
+        hosts:
+          - grafana.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+alertmanager:
+  config:
+    route:
+      receiver: 'rocketchat'
+      group_by:
+        - alertname
+    receivers:
+      - name: 'null'
+      - name: 'rocketchat'
+        webhook_configs:
+          - url: ${ROCKETCHAT_ALERTING}
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/auth-url: "https://oauth2.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io/oauth2/auth"
+      nginx.ingress.kubernetes.io/auth-signin: "https://oauth2.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io/oauth2/start?rd=https%3A%2F%2F$${q}host$${q}request_uri"
+    hosts:
+      - alertmanager.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io
+    pathType: ImplementationSpecific
+    tls:
+      - secretName: addon-certificates-tls
+        hosts:
+          - alertmanager.cocos-${CLUSTER_REGION}-${CLUSTER_STAGE}${CLUSTER_NUMBER}.webapps.audi.io
+kubeScheduler:
+  service:
+    selector:
+      k8s-app: kube-scheduler
+kubeControllerManager:
+  service:
+    selector:
+      k8s-app: kube-controller-manager
+kubeProxy:
+  enabled: false
+coreDns:
+  enabled: false
+kubeDns:
+  enabled: true
+kubeEtcd:
+  enabled: true
+kubelet:
+  serviceMonitor:
+    https: false
+
+prometheusOperator:
+  resources:
+    limits:
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
