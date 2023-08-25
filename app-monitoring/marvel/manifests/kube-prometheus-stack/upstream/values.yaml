@@ -32,6 +32,7 @@ prometheus:
         memory: 200Mi
     enableRemoteWriteReceiver: true
     # storageSpec:
+    
     #   volumeClaimTemplate:
     #     metadata:
     #       name: prometheus-pvc
