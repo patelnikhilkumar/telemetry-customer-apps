@@ -1,0 +1,171 @@
+nameOverride: "monitor-stack-marvel" ## Keep this name consistant with ArgoCD: Application
+defaultRules:
+  create: false
+prometheus:
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/issuer: letsencrypt-prod
+      kubernetes.io/ingress.class: 'nginx'
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+       more_set_headers "Access-Control-Allow-Origin: *";
+      # nginx.ingress.kubernetes.io/auth-url: "https://oauth2.${KOPS_CLUSTER_NAME}/oauth2/auth"
+      # nginx.ingress.kubernetes.io/auth-signin: "https://oauth2.${KOPS_CLUSTER_NAME}/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
+    hosts:
+      - mr-prom.telemetry-dashboard-ams-prd0.hpegmsservices.com
+    pathType: ImplementationSpecific
+    tls:
+      - secretName: marvel-prom-tls ## ?? is it related cert-manager??
+        hosts:
+          - mr-prom.telemetry-dashboard-ams-prd0.hpegmsservices.com
+  prometheusSpec:
+    retention: 30d
+    retentionSize: 75GB
+    externalLabels:
+      cluster: ams-prd0
+      link: 'https://prometheus.telemetry-dashboard-ams-prd0.hpegmsservices.com/alerts'
+    prometheusExternalLabelNameClear: true
+    resources:
+      requests:
+        memory: 200Mi
+    enableRemoteWriteReceiver: true
+    # storageSpec:
+    #   volumeClaimTemplate:
+    #     metadata:
+    #       name: prometheus-pvc
+    #     spec:
+    #       storageClassName: kops-ssd-1-17
+    #       accessModes: ["ReadWriteOnce"]
+    #       resources:
+    #         requests:
+    #           storage: 80Gi
+grafana:
+  plugins:
+    - grafana-piechart-panel
+  defaultDashboardsEnabled: false
+  # dashboardProviders:
+  #   dashboardproviders.yaml:
+  #     apiVersion: 1
+  #     providers:
+  #     - name: 'default'
+  #       orgId: 1
+  #       folder: ''
+  #       type: file
+  #       disableDeletion: false
+  #       editable: true
+  #       options:
+  #         path: /var/lib/grafana/dashboards/default
+  # dashboards:
+  #   default:
+  #     dashboard-nginx-ingress:
+  #       url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
+  #       datasource: Prometheus
+  sidecar:
+    dashboards:
+      searchNamespace: marvel
+    datasource:
+      url: https://mr-prom.telemetry-dashboard-ams-prd0.hpegmsservices.com
+  grafana.ini:
+    server:
+      domain: marvel.telemetry-dashboard-ams-prd.hpegmsservices.com
+      root_url: https://marvel.telemetry-dashboard-ams-prd.hpegmsservices.com
+    # auth.generic_oauth:
+    #   enabled: true
+    #   team_ids:
+    #   allowed_organizations:
+    #   name: Auth0
+    #   client_id: ${OIDC_CLIENT_ID}
+    #   client_secret: ${OIDC_CLIENT_SECRET}
+    #   scopes: openid profile email
+    #   auth_url: https://login.msi.audi.com/authorize
+    #   token_url: https://login.msi.audi.com/oauth/token
+    #   api_url: https://login.msi.audi.com/userinfo
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/issuer: letsencrypt-prod
+      kubernetes.io/ingress.class: 'nginx'
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS"
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+       more_set_headers "Access-Control-Allow-Origin: *";
+      # nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+      # nginx.ingress.kubernetes.io/auth-tls-secret: "cocos-infra/ca-secret"
+      # nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
+      # nginx.ingress.kubernetes.io/auth-tls-pass-certificate-to-upstream: "true"
+      #nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    hosts:
+      - marvel.telemetry-dashboard-ams-prd0.hpegmsservices.com
+      - marvel.telemetry-dashboard-ams-prd.hpegmsservices.com
+    pathType: ImplementationSpecific
+    tls:
+      - secretName: marvel-grafana-tls
+        hosts:
+          - marvel.telemetry-dashboard-ams-prd0.hpegmsservices.com
+          - marvel.telemetry-dashboard-ams-prd.hpegmsservices.com
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+alertmanager:
+  enabled: false
+  # config:
+  #   route:
+  #     receiver: 'rocketchat'
+  #     group_by:
+  #       - alertname
+  #   receivers:
+  #     - name: 'null'
+  #     - name: 'rocketchat'
+  #       webhook_configs:
+  #         - url: ${ALERT_ROCKETCHAT}
+  ingress:
+    enabled: false
+    annotations:
+      kubernetes.io/ingress.class: 'nginx'
+      # nginx.ingress.kubernetes.io/auth-url: "https://oauth2.${KOPS_CLUSTER_NAME}/oauth2/auth"
+      # nginx.ingress.kubernetes.io/auth-signin: "https://oauth2.${KOPS_CLUSTER_NAME}/oauth2/start?rd=https%3A%2F%2F$host$request_uri"
+    hosts:
+      - alertmanager.telemetry-dashboard-ams-prd0.hpegmsservices.com
+    pathType: ImplementationSpecific
+    # tls:
+    #   - secretName: addon-certificates-tls
+    #     hosts:
+    #       - alertmanager.${KOPS_CLUSTER_NAME}
+kubeStateMetrics:
+  enabled: false
+nodeExporter:
+  enabled: false
+kubeScheduler:
+  enabled: false
+  service:
+    selector:
+      k8s-app: kube-scheduler
+kubeControllerManager:
+  enabled: false
+  service:
+    selector:
+      k8s-app: kube-controller-manager
+kubeProxy:
+  enabled: false
+coreDns:
+  enabled: false
+kubeDns:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubelet:
+  serviceMonitor:
+    https: false
+
+prometheusOperator:
+  resources:
+    limits:
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi

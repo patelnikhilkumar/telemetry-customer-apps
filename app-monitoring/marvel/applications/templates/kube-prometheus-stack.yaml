@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitor-stack-marvel
+spec:
+  source:
+    repoURL: https://github.com/patelnikhilkumar/telemetry-customer-apps.git
+    path: manifests/kube-prometheus-stack
+    targetRevision: {{ .Values.spec.source.targetRevision }}
+    plugin:
+      name: helm
+      env:
+        - name: HELM_REPO
+          value: https://prometheus-community.github.io/helm-charts
+        - name: HELM_CHART
+          value: kube-prometheus-stack
+        - name: CHART_VERSION
+          value: 48.3.4
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: marvel
+  project: marvel
