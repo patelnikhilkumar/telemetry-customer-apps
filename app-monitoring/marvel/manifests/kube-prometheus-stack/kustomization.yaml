@@ -14,12 +14,10 @@ resources:
 
 configMapGenerator:
   - name: grafana-dashboards
-    namespace: cocos-infra
+    namespace: marvel
     files:
-    - ./resources/cluster-autoscaler.json
-    - ./resources/dpu-mbv.json
-    - ./resources/jenkins.json
-    - ./resources/spot-instance.json
+    - ./resources/alletra9k.json
+    - ./resources/storeonce.json
     options:
       labels:
         grafana_dashboard: "1"

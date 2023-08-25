@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kube-prometheus-stack
+  name: monitor-stack-marvel
 spec:
   source:
-    repoURL: https://www.cip.audi.de/bitbucket/scm/coc/cocos-gitops.git
+    repoURL: https://github.com/patelnikhilkumar/telemetry-customer-apps.git
     path: manifests/kube-prometheus-stack
     targetRevision: {{ .Values.spec.source.targetRevision }}
     plugin:
@@ -15,8 +15,8 @@ spec:
         - name: HELM_CHART
           value: kube-prometheus-stack
         - name: CHART_VERSION
-          value: 18.0.3
+          value: 48.3.4
   destination:
     server: https://kubernetes.default.svc
-    namespace: cocos-infra
-  project: cocos-infra
+    namespace: marvel
+  project: marvel
