@@ -2,11 +2,12 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: monitor-stack-marvel
+  namespace: argocd
 spec:
   source:
     repoURL: https://github.com/patelnikhilkumar/telemetry-customer-apps.git
-    path: manifests/kube-prometheus-stack
-    targetRevision: {{ .Values.spec.source.targetRevision }}
+    path: app-monitoring/marvel/manifests/kube-prometheus-stack
+    targetRevision: 3.12.2
     plugin:
       name: helm
       env:
